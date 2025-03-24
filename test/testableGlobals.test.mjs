@@ -44,11 +44,55 @@ describe("testableGlobals: enterprise application, test Password Service", () =>
     }
     expect(error).to.deep.equal(new Error("wrong old password"));
   
-    // It's important to test that there were no unwanted side effects. It would be bad
-    // if somebody could change the password without knowing the old password.
     const userAtEnd = await users.getById(userId);
     expect(userAtEnd.passwordHash).to.equal(userAtStart.passwordHash);
     expect(argon2.verifySync(userAtEnd.passwordHash, "oldPassword")).to.be.true;
+  });
+
+});
+
+describe("InMemoryUserDao", () => {
+  let dao;
+  let userIdSeq = 1;
+  beforeEach(() => {
+    dao = new InMemoryUserDao();
+  });
+
+  test("can get user by ID", async () => {
+    const users = [
+      {
+        userId: ++userIdSeq,
+        passwordHash: "passwordHashUser1",
+      },
+      {
+        userId: ++userIdSeq,
+        passwordHash: "passwordHashUser2",
+      },
+    ]
+    users.forEach(async (user) => {
+      await dao.save(user);
+    })
+
+    const user1InDb = await dao.getById(users[0].userId);
+    const user2InBd = await dao.getById(users[1].userId);
+    expect(user1InDb).to.deep.equal(users[0]);
+    expect(user2InBd).to.deep.equal(users[1]);
+    expect(await dao.getById(5)).to.equal(null);
+  });
+
+  test("can create and update user", async () => {
+    const user = {
+      userId: ++userIdSeq,
+      passwordHash: "passwordHash",
+    };
+    await dao.save(user);
+    expect(await dao.getById(user.userId)).to.deep.equal(user);
+
+    user.passwordHash = "changedPasswordHash";
+
+    expect(await dao.getById(user.userId)).to.not.deep.equal(user);
+    await dao.save(user);
+    expect(await dao.getById(user.userId)).to.deep.equal(user);
   });
 
 });
