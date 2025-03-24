@@ -59,11 +59,12 @@ describe("testableGlobals: enterprise application, test Password Service", () =>
 
 });
 
-describe("InMemoryUserDao", () => {
+
+function UserDaoContract(daoProvider) {
   let dao;
   let userIdSeq = 1;
   beforeEach(() => {
-    dao = new InMemoryUserDao();
+    dao = daoProvider();
   });
 
   test("can get user by ID", async () => {
@@ -77,9 +78,9 @@ describe("InMemoryUserDao", () => {
         passwordHash: "passwordHashUser2",
       },
     ]
-    users.forEach(async (user) => {
+    await Promise.all(users.map(async (user) => {
       await dao.save(user);
-    })
+    }));
 
     const user1InDb = await dao.getById(users[0].userId);
     const user2InDb = await dao.getById(users[1].userId);
@@ -102,6 +103,13 @@ describe("InMemoryUserDao", () => {
     await dao.save(user);
     expect(await dao.getById(user.userId)).to.deep.equal(user);
   });
+
+}
+
+describe("InMemoryUserDao", () => {
+
+  const dao = new InMemoryUserDao();
+  UserDaoContract(() => dao);
 
 });
 
@@ -167,9 +175,9 @@ async function connectTestDb() {
 describe("PostgresUserDao", () => {
   let dao;
   let db;
-  let userIdSeq = 100;
 
-  // We have to 
+  // The container must be launched before starting testing.
+
   beforeAll(async () => {
     
     db = await connectTestDb();
@@ -183,31 +191,10 @@ describe("PostgresUserDao", () => {
     dao = new PostgresUserDao(db);
   });
 
-
-  test("can get user by ID", async () => {
-    const users = [
-      {
-        userId: ++userIdSeq,
-        passwordHash: "passwordHashUser1",
-      },
-      {
-        userId: ++userIdSeq,
-        passwordHash: "passwordHashUser2",
-      },
-    ];
-    await Promise.all(users.map(async (user) => {
-      await dao.save(user);
-      const manualCheck = await dao.db.query('SELECT * FROM users WHERE user_id = $1', [user.userId]);
-    }));
-
-    const user1InDb = await dao.getById(users[0].userId);
-    const user2InDb = await dao.getById(users[1].userId);
-    expect(user1InDb).to.deep.equal(users[0]);
-    expect(user2InDb).to.deep.equal(users[1]);
-    expect(await dao.getById(5)).to.equal(null);
-  });
-
   afterAll(async () => {
-    await db.end()
+    await db.end();
   });
+
+  UserDaoContract(() => dao);
+
 });
