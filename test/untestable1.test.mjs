@@ -39,5 +39,4 @@ describe("Untestable 1: days until Christmas with vi.useFakeTimers", () => {
 
     expect(daysUntilChristmas()).toBe(365);
   });
-
 });

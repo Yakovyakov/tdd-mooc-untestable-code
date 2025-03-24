@@ -27,5 +27,4 @@ describe("days until Christmas", () => {
     expect(daysUntilChristmas(new Date("2023-12-26T12:00:00"))).to.equal(365);
     expect(daysUntilChristmas(new Date("2023-12-26T23:59:59"))).to.equal(365);
   });
-
 });

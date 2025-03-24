@@ -2,17 +2,15 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, test } from "vite
 import { expect } from "chai";
 import { InMemoryUserDao, PasswordService, PostgresUserDao } from "../src/testableGlobals.mjs";
 
-
 import argon2 from "@node-rs/argon2";
-import { exec } from 'child_process';
+import { exec } from "child_process";
 
 import pg from "pg";
 import { promisify } from "util";
 
-
 const execAsync = promisify(exec);
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe("testableGlobals: enterprise application, test Password Service", () => {
   const userId = 1;
@@ -22,16 +20,16 @@ describe("testableGlobals: enterprise application, test Password Service", () =>
     users = new InMemoryUserDao();
     service = new PasswordService(users);
   });
-  
+
   test("Password Service can change password", async () => {
     const userAtStart = {
       userId,
       passwordHash: argon2.hashSync("oldPassword"),
     };
     await users.save(userAtStart);
-  
+
     await service.changePassword(userId, "oldPassword", "newPassword");
-  
+
     const userAtEnd = await users.getById(userId);
     expect(userAtEnd.passwordHash).to.not.equal(userAtStart.passwordHash);
     expect(argon2.verifySync(userAtEnd.passwordHash, "newPassword")).to.be.true;
@@ -43,7 +41,7 @@ describe("testableGlobals: enterprise application, test Password Service", () =>
       passwordHash: argon2.hashSync("oldPassword"),
     };
     await users.save(userAtStart);
-  
+
     let error;
     try {
       await service.changePassword(userId, "wrongPassword", "newPassword");
@@ -51,14 +49,12 @@ describe("testableGlobals: enterprise application, test Password Service", () =>
       error = e;
     }
     expect(error).to.deep.equal(new Error("wrong old password"));
-  
+
     const userAtEnd = await users.getById(userId);
     expect(userAtEnd.passwordHash).to.equal(userAtStart.passwordHash);
     expect(argon2.verifySync(userAtEnd.passwordHash, "oldPassword")).to.be.true;
   });
-
 });
-
 
 function UserDaoContract(daoProvider) {
   let dao;
@@ -77,10 +73,12 @@ function UserDaoContract(daoProvider) {
         userId: ++userIdSeq,
         passwordHash: "passwordHashUser2",
       },
-    ]
-    await Promise.all(users.map(async (user) => {
-      await dao.save(user);
-    }));
+    ];
+    await Promise.all(
+      users.map(async (user) => {
+        await dao.save(user);
+      }),
+    );
 
     const user1InDb = await dao.getById(users[0].userId);
     const user2InDb = await dao.getById(users[1].userId);
@@ -103,14 +101,11 @@ function UserDaoContract(daoProvider) {
     await dao.save(user);
     expect(await dao.getById(user.userId)).to.deep.equal(user);
   });
-
 }
 
 describe("InMemoryUserDao", () => {
-
   const dao = new InMemoryUserDao();
   UserDaoContract(() => dao);
-
 });
 
 async function isPostgresReady(host, port, user, password, database, maxAttempts = 10) {
@@ -127,7 +122,7 @@ async function isPostgresReady(host, port, user, password, database, maxAttempts
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const client = await pool.connect();
-      await client.query('SELECT 1');
+      await client.query("SELECT 1");
       client.release();
       return true;
     } catch (err) {
@@ -143,8 +138,8 @@ async function connectTestDb() {
 
   const resultPort = await execAsync(`docker compose port ${service} ${privatePort}`);
   const [host, port] = resultPort.stdout.trim().split(":");
-  
-  const psResult =  await execAsync(`docker compose ps --quiet ${service}`);
+
+  const psResult = await execAsync(`docker compose ps --quiet ${service}`);
   const containerId = psResult.stdout.trim();
 
   const inspectResult = await execAsync(`docker inspect ${containerId}`);
@@ -155,13 +150,7 @@ async function connectTestDb() {
       m[k] = v;
       return m;
     }, {});
-  await isPostgresReady(
-    host,
-    port,
-    env.POSTGRES_USER,
-    env.POSTGRES_PASSWORD,
-    env.POSTGRES_USER,
-  );
+  await isPostgresReady(host, port, env.POSTGRES_USER, env.POSTGRES_PASSWORD, env.POSTGRES_USER);
 
   return new pg.Pool({
     host,
@@ -179,7 +168,6 @@ describe("PostgresUserDao", () => {
   // The container must be launched before starting testing.
 
   beforeAll(async () => {
-    
     db = await connectTestDb();
 
     // drop-tables.sql
@@ -196,5 +184,4 @@ describe("PostgresUserDao", () => {
   });
 
   UserDaoContract(() => dao);
-
 });
