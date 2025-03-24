@@ -28,17 +28,17 @@ describe("testableGlobals: enterprise application, test Password Service", () =>
     expect(userAtEnd.passwordHash).to.not.equal(userAtStart.passwordHash);
     expect(argon2.verifySync(userAtEnd.passwordHash, "newPassword")).to.be.true;
   });
-/*  
-  test("old password did not match", async () => {
-    const userBefore = {
+
+  test("Password Service If the previous password does not match, the password is not changed.", async () => {
+    const userAtStart = {
       userId,
-      passwordHash: hasher.hashPassword("old-pw"),
+      passwordHash: argon2.hashSync("oldPassword"),
     };
-    await users.save(userBefore);
+    await users.save(userAtStart);
   
     let error;
     try {
-      await service.changePassword(userId, "wrong-pw", "new-pw");
+      await service.changePassword(userId, "wrongPassword", "newPassword");
     } catch (e) {
       error = e;
     }
@@ -46,10 +46,10 @@ describe("testableGlobals: enterprise application, test Password Service", () =>
   
     // It's important to test that there were no unwanted side effects. It would be bad
     // if somebody could change the password without knowing the old password.
-    const userAfter = await users.getById(userId);
-    expect(userAfter.passwordHash).to.equal(userBefore.passwordHash);
-    expect(hasher.verifyPassword(userAfter.passwordHash, "old-pw")).to.be.true;
+    const userAtEnd = await users.getById(userId);
+    expect(userAtEnd.passwordHash).to.equal(userAtStart.passwordHash);
+    expect(argon2.verifySync(userAtEnd.passwordHash, "oldPassword")).to.be.true;
   });
-  */
+
 });
 
