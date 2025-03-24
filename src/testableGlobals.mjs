@@ -37,8 +37,15 @@ export class PostgresUserDao {
   }
 }
 
+// The Password Service is coupled with the database.
+// We could also pass the object that controls the database users as parameters to the constructor,
+// so we can replace it with test doubles.
+
 export class PasswordService {
-  users = PostgresUserDao.getInstance();
+  
+  constructor(users) {
+    this.users = users;
+  }
 
   async changePassword(userId, oldPassword, newPassword) {
     const user = await this.users.getById(userId);
