@@ -37,12 +37,27 @@ export class PostgresUserDao {
   }
 }
 
+// This class is an in-memory implementation of the DAO, useful for unit testing.
+// So that tests can inject an in-memory database.
+
+export class InMemoryUserDao {
+  users = {};
+
+  async getById(userId) {
+    return structuredClone(this.users[userId]) || null;
+  }
+
+  async save(user) {
+    this.users[user.userId] = structuredClone(user);
+  }
+}
+
 // The Password Service is coupled with the database.
 // We could also pass the object that controls the database users as parameters to the constructor,
 // so we can replace it with test doubles.
 
 export class PasswordService {
-  
+
   constructor(users) {
     this.users = users;
   }
